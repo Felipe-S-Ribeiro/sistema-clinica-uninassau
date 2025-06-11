@@ -1,9 +1,14 @@
 Criadores:
-Felipe Ribeiro
-Vitor Hugor Viana
-Rafael Bom Conselho
-Everton Santos
-Renan Faleta
+
+- Felipe Ribeiro
+
+- Vitor Hugor Viana
+  
+- Rafael Bom Conselho
+
+- Everton Santos
+  
+- Renan Faleta
 
 
 Sistema de Gestão | Clínica Escola Uninassau
