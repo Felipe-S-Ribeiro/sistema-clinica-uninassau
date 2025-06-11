@@ -22,13 +22,19 @@ Este projeto é um sistema web de gestão desenvolvido para a Clínica Escola Un
  Tecnologias Utilizadas:
 
 Tecnologia	Motivo da Escolha
-Node.js	Ambiente de execução do JavaScript no backend. Permite construir um servidor rápido e escalável, utilizando uma única linguagem (JavaScript) em todo o projeto.
-Express.js	Framework minimalista para Node.js. Foi utilizado para criar o servidor web, gerenciar as rotas da aplicação (ex: /vendas, /produtos) e manipular as requisições HTTP de forma simples e organizada.
-Nunjucks	Template Engine para o frontend. Foi escolhida por sua sintaxe simples e poderosa (similar a outras engines), permitindo criar páginas HTML dinâmicas ao injetar dados vindos do servidor.
-MongoDB	Banco de dados NoSQL orientado a documentos. Ideal para este projeto por sua flexibilidade, facilitando o armazenamento de dados com estruturas variadas, como uma venda com uma lista de produtos.
-MongoDB Compass	Ferramenta de interface gráfica (GUI) utilizada para visualizar, consultar e gerenciar os dados diretamente no banco de dados MongoDB de forma intuitiva.
+- Node.js	Ambiente de execução do JavaScript no backend. Permite construir um servidor rápido e escalável, utilizando uma única linguagem (JavaScript) em todo o projeto.
+
+- Express.js	Framework minimalista para Node.js. Foi utilizado para criar o servidor web, gerenciar as rotas da aplicação (ex: /vendas, /produtos) e manipular as requisições HTTP de forma simples e organizada.
+  
+- Nunjucks	Template Engine para o frontend. Foi escolhida por sua sintaxe simples e poderosa (similar a outras engines), permitindo criar páginas HTML dinâmicas ao injetar dados vindos do servidor.
+  
+- MongoDB	Banco de dados NoSQL orientado a documentos. Ideal para este projeto por sua flexibilidade, facilitando o armazenamento de dados com estruturas variadas, como uma venda com uma lista de produtos.
+  
+- MongoDB Compass	Ferramenta de interface gráfica (GUI) utilizada para visualizar, consultar e gerenciar os dados diretamente no banco de dados MongoDB de forma intuitiva.
+
 JavaScript (Puro)	Utilizado no lado do cliente (navegador) para adicionar interatividade à página sem a necessidade de um framework pesado, como a adição dinâmica de produtos no formulário de venda.
-Yarn	Gerenciador de pacotes. Foi usado no lugar do NPM para instalar e gerenciar as dependências do projeto (Express, Nunjucks, etc.), conhecido por sua performance e estabilidade.
+
+- Yarn	Gerenciador de pacotes. Foi usado no lugar do NPM para instalar e gerenciar as dependências do projeto (Express, Nunjucks, etc.), conhecido por sua performance e estabilidade.
 
 
 
