@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatório de Vendas Local</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    
+    <style>
+        body { background-color: #f8f9fa; }
+        .container { max-width: 1200px; }
+        .kpi-card { text-align: center; }
+        .kpi-card .card-title { font-size: 2rem; font-weight: bold; }
+        .kpi-card .card-text { font-size: 1rem; color: #6c757d; }
+        .product-row { background-color: #fdfdff; border: 1px solid #eee; border-radius: 5px; padding: 10px; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="container my-4">
+        
+        <div class="card mb-5">
+            <div class="card-header">
+                <h4 class="mb-0"><i class="bi bi-cart-plus"></i> Registrar Nova Venda</h4>
+            </div>
+            <div class="card-body">
+                <form id="sale-form">
+                    <div class="row">
+                        <div class="col-md-12 mb-3">
+                            <label for="sellerName" class="form-label">Nome do Vendedor</label>
+                            <input type="text" id="sellerName" class="form-control" required placeholder="Digite o nome do vendedor">
+                        </div>
+                    </div>
+                    <hr>
+                    <h5>Produtos da Venda</h5>
+                    <div id="products-container">
+                        </div>
+                    <button type="button" id="add-product-btn" class="btn btn-sm btn-outline-success mt-2"><i class="bi bi-plus"></i> Adicionar Produto</button>
+                    <hr>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">Salvar Venda</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <header class="mb-4">
+            <h3><i class="bi bi-graph-up-arrow"></i> Relatório de Vendas</h3>
+            <p class="text-muted">Analise o desempenho das suas vendas. Os dados estão salvos neste navegador.</p>
+        </header>
+
+        <div class="row mb-4">
+            <div class="col-md-4">
+                <div class="card kpi-card">
+                    <div class="card-body">
+                        <h5 class="card-title text-primary" id="kpi-total-sales">0</h5>
+                        <p class="card-text">Vendas Realizadas</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card kpi-card">
+                    <div class="card-body">
+                        <h5 class="card-title text-success" id="kpi-total-revenue">R$ 0,00</h5>
+                        <p class="card-text">Faturamento Total</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card kpi-card">
+                    <div class="card-body">
+                        <h5 class="card-title text-info" id="kpi-total-items">0</h5>
+                        <p class="card-text">Produtos Vendidos (un.)</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card card-body mb-4">
+            <form id="filter-form">
+                <div class="row align-items-end">
+                    <div class="col-md-4">
+                        <label class="form-label">Data Inicial</label>
+                        <input class="form-control" type="date" id="filter-start-date">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Data Final</label>
+                        <input class="form-control" type="date" id="filter-end-date">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Vendedor</label>
+                        <input class="form-control" type="text" id="filter-seller" placeholder="Filtrar por nome do vendedor...">
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="d-flex justify-content-between mb-3">
+            <button id="clear-data-btn" class="btn btn-danger"><i class="bi bi-trash"></i> Limpar Todos os Dados</button>
+            <button id="export-btn" class="btn btn-success"><i class="bi bi-file-earmark-excel"></i> Exportar para Excel</button>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-dark">
+                    <tr>
+                        <th>Data</th>
+                        <th>Vendedor</th>
+                        <th>Produtos Vendidos</th>
+                        <th>Total da Venda</th>
+                        <th class="text-center">Ações</th>
+                    </tr>
+                </thead>
+                <tbody id="report-table-body">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const saleForm = document.getElementById('sale-form');
+            const productsContainer = document.getElementById('products-container');
+            const addProductBtn = document.getElementById('add-product-btn');
+            
+            const reportTableBody = document.getElementById('report-table-body');
+            const filterForm = document.getElementById('filter-form');
+            const exportBtn = document.getElementById('export-btn');
+            const clearDataBtn = document.getElementById('clear-data-btn');
+
+            const kpiTotalSales = document.getElementById('kpi-total-sales');
+            const kpiTotalRevenue = document.getElementById('kpi-total-revenue');
+            const kpiTotalItems = document.getElementById('kpi-total-items');
+
+            const STORAGE_KEY = 'localSalesData';
+            let productCounter = 0;
+
+            // ===========================================
+            // LÓGICA DO FORMULÁRIO DE REGISTRO DE VENDA
+            // ===========================================
+
+            const addProductRow = () => {
+                productCounter++;
+                const productRow = document.createElement('div');
+                productRow.className = 'row product-row align-items-end';
+                productRow.innerHTML = `
+                    <div class="col-md-6">
+                        <label class="form-label">Nome do Produto</label>
+                        <input type="text" class="form-control product-name" required>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Qtd.</label>
+                        <input type="number" class="form-control product-quantity" min="1" value="1" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">Preço (un.)</label>
+                        <input type="number" class="form-control product-price" min="0" step="0.01" required>
+                    </div>
+                    <div class="col-md-1">
+                        <button type="button" class="btn btn-sm btn-outline-danger w-100 remove-product-btn"><i class="bi bi-trash"></i></button>
+                    </div>
+                `;
+                productsContainer.appendChild(productRow);
+                
+                productRow.querySelector('.remove-product-btn').addEventListener('click', () => {
+                    productRow.remove();
+                });
+            };
+
+            addProductBtn.addEventListener('click', addProductRow);
+
+            saleForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+
+                const items = [];
+                let saleTotal = 0;
+                const productRows = productsContainer.querySelectorAll('.product-row');
+
+                if (productRows.length === 0) {
+                    alert('Adicione pelo menos um produto à venda.');
+                    return;
+                }
+                
+                productRows.forEach(row => {
+                    const quantity = parseFloat(row.querySelector('.product-quantity').value);
+                    const price = parseFloat(row.querySelector('.product-price').value);
+                    const item = {
+                        name: row.querySelector('.product-name').value,
+                        quantity: quantity,
+                        price: price,
+                        total: quantity * price,
+                    };
+                    items.push(item);
+                    saleTotal += item.total;
+                });
+                
+                const newSale = {
+                    id: Date.now(),
+                    createdAt: new Date().toISOString(),
+                    sellerName: document.getElementById('sellerName').value,
+                    items: items,
+                    total: saleTotal,
+                };
+
+                const sales = getSales();
+                sales.push(newSale);
+                saveSales(sales);
+
+                alert('Venda registrada com sucesso!');
+                saleForm.reset();
+                productsContainer.innerHTML = '';
+                addProductRow(); // Adiciona uma linha inicial para a próxima venda
+                renderReport();
+            });
+
+            // ===========================================
+            // LÓGICA DO RELATÓRIO
+            // ===========================================
+
+            const getSales = () => JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+            const saveSales = (sales) => localStorage.setItem(STORAGE_KEY, JSON.stringify(sales));
+            const formatCurrency = (value) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+
+            const renderReport = () => {
+                let sales = getSales();
+
+                // Aplicar Filtros
+                const startDate = document.getElementById('filter-start-date').value;
+                const endDate = document.getElementById('filter-end-date').value;
+                const sellerFilter = document.getElementById('filter-seller').value.toLowerCase();
+
+                if (startDate) {
+                    sales = sales.filter(s => s.createdAt.split('T')[0] >= startDate);
+                }
+                if (endDate) {
+                    sales = sales.filter(s => s.createdAt.split('T')[0] <= endDate);
+                }
+                if (sellerFilter) {
+                    sales = sales.filter(s => s.sellerName.toLowerCase().includes(sellerFilter));
+                }
+
+                reportTableBody.innerHTML = ''; // Limpar tabela
+                
+                if (sales.length === 0) {
+                    reportTableBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Nenhuma venda encontrada.</td></tr>';
+                }
+
+                // Ordenar por data mais recente
+                sales.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                
+                sales.forEach(sale => {
+                    const productsList = sale.items.map(item => `<li>${item.quantity}x ${item.name}</li>`).join('');
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${new Date(sale.createdAt).toLocaleString('pt-BR')}</td>
+                        <td>${sale.sellerName}</td>
+                        <td><ul class="list-unstyled mb-0">${productsList}</ul></td>
+                        <td><strong>${formatCurrency(sale.total)}</strong></td>
+                        <td class="text-center">
+                            <button class="btn btn-sm btn-outline-secondary print-btn" data-id="${sale.id}">
+                                <i class="bi bi-printer"></i> Imprimir
+                            </button>
+                        </td>
+                    `;
+                    reportTableBody.appendChild(row);
+                });
+
+                updateKPIs(sales);
+            };
+
+            const updateKPIs = (filteredSales) => {
+                const totalRevenue = filteredSales.reduce((sum, sale) => sum + sale.total, 0);
+                const totalItems = filteredSales.reduce((sum, sale) => sum + sale.items.reduce((itemSum, item) => itemSum + item.quantity, 0), 0);
+
+                kpiTotalSales.textContent = filteredSales.length;
+                kpiTotalRevenue.textContent = formatCurrency(totalRevenue);
+                kpiTotalItems.textContent = totalItems;
+            };
+
+            const handlePrint = (saleId) => {
+                const sale = getSales().find(s => s.id === saleId);
+                if (!sale) return;
+
+                const itemsHtml = sale.items.map(item => `
+                    <tr>
+                        <td>${item.name}</td>
+                        <td style="text-align:right;">${item.quantity}</td>
+                        <td style="text-align:right;">${formatCurrency(item.total)}</td>
+                    </tr>
+                `).join('');
+
+                const receiptHtml = `
+                    <!DOCTYPE html><html><head><title>Recibo</title>
+                    <style>
+                        body { font-family: monospace; width: 300px; }
+                        table { width: 100%; border-collapse: collapse; }
+                        hr { border: none; border-top: 1px dashed #000; }
+                    </style></head><body>
+                    <h3>Recibo de Venda</h3>
+                    <p>Data: ${new Date(sale.createdAt).toLocaleString('pt-BR')}</p>
+                    <p>Vendedor: ${sale.sellerName}</p>
+                    <hr>
+                    <table><thead><tr><th>Item</th><th style="text-align:right;">Qtd</th><th style="text-align:right;">Total</th></tr></thead><tbody>${itemsHtml}</tbody></table>
+                    <hr>
+                    <h4 style="text-align:right;">TOTAL: ${formatCurrency(sale.total)}</h4>
+                    </body></html>
+                `;
+                
+                const printWindow = window.open('', '_blank');
+                printWindow.document.write(receiptHtml);
+                printWindow.document.close();
+                printWindow.print();
+            };
+            
+            reportTableBody.addEventListener('click', (e) => {
+                if(e.target.closest('.print-btn')) {
+                    const saleId = parseInt(e.target.closest('.print-btn').dataset.id);
+                    handlePrint(saleId);
+                }
+            });
+
+            filterForm.addEventListener('input', renderReport);
+            
+            exportBtn.addEventListener('click', () => {
+                const sales = getSales(); // Idealmente, deveria pegar apenas os dados filtrados
+                if (sales.length === 0) return alert('Não há dados para exportar.');
+                const dataForSheet = sales.map(s => ({
+                    'Data': new Date(s.createdAt).toLocaleString('pt-BR'),
+                    'Vendedor': s.sellerName,
+                    'Produtos': s.items.map(i => `${i.quantity}x ${i.name}`).join(', '),
+                    'Total': s.total
+                }));
+                const worksheet = XLSX.utils.json_to_sheet(dataForSheet);
+                const workbook = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(workbook, worksheet, "Vendas");
+                XLSX.writeFile(workbook, "RelatorioDeVendas.xlsx");
+            });
+
+            clearDataBtn.addEventListener('click', () => {
+                if (confirm('Tem certeza que deseja apagar TODAS as vendas salvas? Esta ação é irreversível.')) {
+                    localStorage.removeItem(STORAGE_KEY);
+                    renderReport();
+                }
+            });
+
+            // Carga Inicial
+            addProductRow(); // Adiciona a primeira linha de produto no formulário
+            renderReport();
+        });
+    </script>
+</body>
+</html>

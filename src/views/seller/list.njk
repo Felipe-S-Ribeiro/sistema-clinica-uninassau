@@ -1,0 +1,180 @@
+{% extends "layout.njk" %}
+
+{% block head %}
+    <title>Cadastro de Usuários</title>
+    
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <style>
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #print-area, #print-area * {
+                visibility: visible;
+            }
+            #print-area {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+            }
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div id="no-print">
+        <h3>Cadastro de Usuários</h3>
+
+        <form id="form-usuario" class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label">Nome *</label>
+                <input type="text" class="form-control" id="nome" required>
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">E-mail</label>
+                <input type="email" class="form-control" id="email">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">CPF</label>
+                <input type="text" class="form-control" id="cpf">
+            </div>
+            <div class="col-md-6">
+                <label class="form-label">Telefone</label>
+                <input type="text" class="form-control" id="telefone">
+            </div>
+            <div class="col-md-12">
+                <label class="form-label">Endereço</label>
+                <input type="text" class="form-control" id="endereco">
+            </div>
+            <div class="col-12">
+                <button type="submit" class="btn btn-primary">Cadastrar</button>
+            </div>
+        </form>
+
+        <hr/>
+
+        <div class="mb-3">
+            <input type="text" class="form-control" id="search" placeholder="Buscar por nome">
+        </div>
+    </div>
+
+    <div id="print-area">
+        <h4 class="d-none d-print-block mb-3">Lista de Usuários</h4>
+        <table class="table table-bordered" id="tabela-usuarios">
+            <thead class="table-light">
+                <tr>
+                    <th>Nome</th>
+                    <th>E-mail</th>
+                    <th>CPF</th>
+                    <th>Telefone</th>
+                    <th>Endereço</th>
+                    <th class="no-print">Ações</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <div class="mt-3 no-print">
+        <button class="btn btn-success" onclick="exportarExcel()">Exportar para Excel</button>
+        <button class="btn btn-secondary" onclick="imprimirLista()">Imprimir</button>
+    </div>
+</div>
+
+<script>
+    let usuarios = JSON.parse(localStorage.getItem("usuarios") || "[]");
+
+    function renderTabela() {
+        const tbody = document.querySelector("#tabela-usuarios tbody");
+        const search = document.getElementById("search").value.toLowerCase();
+        tbody.innerHTML = "";
+
+        usuarios
+            .filter(u => u.nome.toLowerCase().includes(search))
+            .forEach((u, i) => {
+                const tr = document.createElement("tr");
+                // Adicionamos a classe 'no-print' na coluna de ações
+                tr.innerHTML = `
+                    <td>${u.nome}</td>
+                    <td>${u.email}</td>
+                    <td>${u.cpf}</td>
+                    <td>${u.telefone}</td>
+                    <td>${u.endereco}</td>
+                    <td class="no-print">
+                        <button class="btn btn-sm btn-warning" onclick="editarUsuario(${i})">Editar</button>
+                        <button class="btn btn-sm btn-danger" onclick="deletarUsuario(${i})">Excluir</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+    }
+
+    function salvarDados() {
+        localStorage.setItem("usuarios", JSON.stringify(usuarios));
+        renderTabela();
+    }
+
+    document.getElementById("form-usuario").addEventListener("submit", function (e) {
+        e.preventDefault();
+        const nome = document.getElementById("nome").value;
+        const email = document.getElementById("email").value;
+        const cpf = document.getElementById("cpf").value;
+        const telefone = document.getElementById("telefone").value;
+        const endereco = document.getElementById("endereco").value;
+
+        usuarios.push({ nome, email, cpf, telefone, endereco });
+        salvarDados();
+        this.reset();
+    });
+
+    function deletarUsuario(index) {
+        if (confirm("Deseja realmente excluir este usuário?")) {
+            usuarios.splice(index, 1);
+            salvarDados();
+        }
+    }
+
+    function editarUsuario(index) {
+        const u = usuarios[index];
+        document.getElementById("nome").value = u.nome;
+        document.getElementById("email").value = u.email;
+        document.getElementById("cpf").value = u.cpf;
+        document.getElementById("telefone").value = u.telefone;
+        document.getElementById("endereco").value = u.endereco;
+
+        usuarios.splice(index, 1);
+        salvarDados();
+        alert('Os dados do usuário foram carregados no formulário para edição. Clique em "Cadastrar" para salvar as alterações.');
+    }
+
+    document.getElementById("search").addEventListener("input", renderTabela);
+
+    function exportarExcel() {
+        const cabecalho = ["Nome", "E-mail", "CPF", "Telefone", "Endereço"];
+        const dadosParaPlanilha = usuarios.map(u => [
+            u.nome,
+            u.email,
+            u.cpf,
+            u.telefone,
+            u.endereco
+        ]);
+
+        const worksheet = XLSX.utils.aoa_to_sheet([cabecalho, ...dadosParaPlanilha]);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Usuários");
+        XLSX.writeFile(workbook, "ListaDeUsuarios.xlsx");
+    }
+
+    // NOVA FUNÇÃO PARA IMPRIMIR
+    function imprimirLista() {
+        window.print();
+    }
+
+    renderTabela();
+</script>
+{% endblock %}
